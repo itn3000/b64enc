@@ -1,0 +1,3 @@
+*.rs text=auto
+Cargo.toml text=auto
+Cargo.lock eol=lf
