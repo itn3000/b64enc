@@ -119,33 +119,34 @@ where
     });
     let fout = tokio::spawn(async move {
         let mut buf = String::with_capacity(buffer_length * 2);
+        let mut decoded: Vec<u8> = Vec::with_capacity(buffer_length * 2);
+        decoded.extend((0..buffer_length).map(|_| 0u8));
         loop {
             let rbuf = recv.recv().await;
             if let Some(data) = rbuf {
                 // let r = output.write(&mut data).await;
                 buf.extend(data.chars().filter(|c| (*c != ' ') && (*c != '\n') && (*c != '\r')));
                 let x = if buf.len() >= 4 { buf.len() % 4 } else { 0 };
-                let remaining = buf.chars().skip(buf.len() - x);
-                let decoded = match if is_url {
-                    general_purpose::URL_SAFE.decode(&buf[0..buf.len() - x])
-                 } else {
-                    general_purpose::STANDARD.decode(&buf[0..buf.len() - x])
-                 } {
-                    Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("decode error: {:?}, ({}, {})", e, buf.len() - x, x);
-                        return Err(anyhow::Error::from(e));
-                    }
-                };
-                output.write(decoded.as_ref()).await?;
-                buf = String::from_iter(remaining);
+                let remaining: Vec<char> = buf.chars().skip(buf.len() - x).collect();
+                let byteswritten = if is_url {
+                    general_purpose::URL_SAFE.decode_slice(&buf[0..buf.len() - x], &mut decoded)
+                } else {
+                    general_purpose::STANDARD.decode_slice(&buf[0..buf.len() - x], &mut decoded)
+                }?;
+                output.write(&decoded[0..byteswritten]).await?;
+                buf.truncate(0);
+                buf.extend(remaining.iter());
             } else {
                 break;
             }
         }
         if buf.len() != 0 {
-            let encoded = general_purpose::STANDARD.decode(&buf)?;
-            output.write(encoded.as_ref()).await?;
+            let byteswritten = if is_url {
+                general_purpose::URL_SAFE.decode_slice(&buf, &mut decoded)
+            } else {
+                general_purpose::STANDARD.decode_slice(&buf, &mut decoded)
+            }?;
+            output.write(&decoded[0..byteswritten]).await?;
         }
         Ok::<u32, anyhow::Error>(0)
     });
