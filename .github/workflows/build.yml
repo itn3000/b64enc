@@ -49,4 +49,4 @@ jobs:
         with:
           name: pdb-{{matrix.triplet}}
             - target/b64enc.pdb
-        if: "{{matrix.osimage}} == 'windows-2019'"
+        if: "matrix.osimage == 'windows-2019'"
