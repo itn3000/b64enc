@@ -40,12 +40,12 @@ jobs:
       - name: compile
         run: cargo build --release
       - name: collect-executable
-        uses: upload-artifact@v3
+        uses: actions/upload-artifact@v3
         with:
           name: binary-{{matrix.triplet}}
             - target/b64enc{{matrix.binext}}
       - name: collect-pdb
-        uses: upload-artifact@v3
+        uses: actions/upload-artifact@v3
         with:
           name: pdb-{{matrix.triplet}}
             - target/b64enc.pdb
