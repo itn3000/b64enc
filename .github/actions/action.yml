@@ -1,0 +1,52 @@
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    strategy:
+      matrix:
+        osimage:
+          - ubuntu-20.04
+          - macos-11
+          - windows-2019
+        include:
+          - osimage: windows-2019
+            binext: ".exe"
+            pdbext: ".pdb"
+            triplet: "x86_64-pc-windows-msvc"
+          - osimage: ubuntu-20.04
+            triplet: "x86_64-unknown-linux-musl"
+            binext: ""
+          - osimage: macos-11
+            triplet: "aarch64-apple-darwin"
+            binext: ""
+    runs-on: "{{matrix.osimage}}"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: install-toolchain
+        run: rustup toolchain install stable-{{matrix.triplet}}
+      - name: compile
+        run: cargo build --release
+      - name: collect-executable
+        uses: upload-artifact@v3
+        with:
+          name: binary-{{matrix.triplet}}
+            - target/b64enc{{matrix.binext}}
+      - name: collect-pdb
+        uses: upload-artifact@v3
+        with:
+          name: pdb-{{matrix.triplet}}
+            - target/b64enc.pdb
+        if: "{{matrix.osimage}} == 'windows-2019'"
