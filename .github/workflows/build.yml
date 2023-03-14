@@ -47,10 +47,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: binary-${{matrix.triplet}}
-            - target/b64enc{{matrix.binext}}
+            - target/release/b64enc${{matrix.binext}}
       - name: collect-pdb
         uses: actions/upload-artifact@v3
         with:
           name: pdb-${{matrix.triplet}}
-            - target/b64enc.pdb
+            - target/release/b64enc.pdb
         if: "matrix.osimage == 'windows-2019'"
